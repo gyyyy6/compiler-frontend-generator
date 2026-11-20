@@ -1,0 +1,42 @@
+@start program
+
+program             -> definition-list ;
+definition-list     -> definition-list definition | definition ;
+definition          -> variable-definition | function-definition ;
+variable-definition -> type-indicator ID SYM_SEMI
+                    |  type-indicator ID SYM_LBRACKET NUM SYM_RBRACKET SYM_SEMI ;
+type-indicator      -> KW_INT | KW_FLOAT | KW_DOUBLE | KW_VOID ;
+function-definition -> type-indicator ID SYM_LPAREN parameters SYM_RPAREN compound-stmt ;
+parameters          -> parameter-list | KW_VOID ;
+parameter-list      -> parameter-list SYM_COMMA parameter | parameter ;
+parameter           -> type-indicator ID
+                    |  type-indicator ID SYM_LBRACKET SYM_RBRACKET ;
+compound-stmt       -> SYM_LBRACE local-definitions statement-list SYM_RBRACE ;
+local-definitions   -> local-definitions variable-definition | # ;
+statement-list      -> statement-list statement | # ;
+statement           -> expression-stmt | compound-stmt | condition-stmt
+                    |  while-stmt | for-stmt | return-stmt ;
+expression-stmt     -> expression SYM_SEMI | SYM_SEMI ;
+condition-stmt      -> KW_IF SYM_LPAREN expression SYM_RPAREN statement
+                    |  KW_IF SYM_LPAREN expression SYM_RPAREN statement KW_ELSE statement ;
+while-stmt          -> KW_WHILE SYM_LPAREN expression SYM_RPAREN statement ;
+for-stmt            -> KW_FOR SYM_LPAREN for-init SYM_SEMI expression SYM_SEMI for-update SYM_RPAREN statement ;
+for-init            -> expression | variable-definition | # ;
+for-update          -> expression-list | # ;
+expression-list     -> expression-list SYM_COMMA expression | expression ;
+return-stmt         -> KW_RETURN SYM_SEMI | KW_RETURN expression SYM_SEMI ;
+expression          -> variable SYM_ASSIGN expression | simple-expression ;
+variable            -> ID | ID SYM_LBRACKET expression SYM_RBRACKET ;
+simple-expression   -> additive-expression relop additive-expression
+                    |  additive-expression ;
+relop               -> SYM_LE | SYM_LT | SYM_GT | SYM_GE | SYM_EQ | SYM_NE ;
+additive-expression -> additive-expression addop term | term ;
+addop               -> SYM_PLUS | SYM_MINUS ;
+term                -> term mulop power | power ;
+mulop               -> SYM_TIMES | SYM_DIV | SYM_MOD ;
+power               -> factor SYM_POWER power | factor ;
+factor              -> SYM_LPAREN expression SYM_RPAREN | variable | call | NUM
+                    |  SYM_INC variable | SYM_DEC variable ;
+call                -> ID SYM_LPAREN arguments SYM_RPAREN ;
+arguments           -> argument-list | # ;
+argument-list       -> argument-list SYM_COMMA expression | expression ;

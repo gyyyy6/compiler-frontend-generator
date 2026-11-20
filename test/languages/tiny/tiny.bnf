@@ -1,0 +1,20 @@
+@start program
+
+program        -> stmt-sequence ;
+stmt-sequence  -> stmt-sequence SYM_SEMI statement | statement ;
+statement      -> if-stmt | repeat-stmt | assign-stmt | read-stmt | write-stmt ;
+if-stmt        -> KW_IF exp KW_THEN stmt-sequence KW_END
+               |  KW_IF exp KW_THEN stmt-sequence KW_ELSE stmt-sequence KW_END ;
+repeat-stmt    -> KW_REPEAT stmt-sequence KW_UNTIL exp ;
+assign-stmt    -> ID SYM_ASSIGN exp ;
+read-stmt      -> KW_READ ID ;
+write-stmt     -> KW_WRITE exp ;
+exp            -> simple-exp comparison-op simple-exp | simple-exp ;
+comparison-op  -> SYM_LT | SYM_GT | SYM_EQ | SYM_LE | SYM_NE | SYM_GE ;
+simple-exp     -> simple-exp addop term | term ;
+addop          -> SYM_PLUS | SYM_MINUS ;
+term           -> term mulop power | power ;
+mulop          -> SYM_TIMES | SYM_DIV | SYM_MOD ;
+power          -> factor powop power | factor ;
+powop          -> SYM_POWER ;
+factor         -> SYM_LPAREN exp SYM_RPAREN | NUM | ID ;

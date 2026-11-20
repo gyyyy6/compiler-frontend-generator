@@ -1,0 +1,97 @@
+// Mini-C 正向全覆盖样例：覆盖全部 78 条产生式与单词表
+// 依据《编译原理课程设计任务书》第二组测试数据（Mini C 的单词与语法）
+// T3.3 扩展：for-init 三种形态、for-update 空/逗号、零实参调用、ID 边界、悬挂 else、数组左值
+int a;
+float f;
+double d;
+int arr[10];
+int _tmp;
+int a_1;
+int iffy;
+int format;
+
+int add(int x, int y)
+{
+    return x + y;
+}
+
+int zero(void)
+{
+    return 0;
+}
+
+int total(int values[], int n)
+{
+    return values[0] + n;
+}
+
+void empty(void)
+{
+}
+
+void main(void)
+{
+    int i;
+    int sum;
+    int k;
+    double pi;
+    pi = 3.14;
+    sum = 0;
+    i = 0;
+    _tmp = 1;
+    a_1 = _tmp;
+    iffy = a_1;
+    format = iffy;
+    while (i < 10)
+    {
+        sum = sum + i * 2 - 10 / 5 % 3;
+        i = i + 1;
+    }
+    for (i = 0; i < 10; i = i + 1)
+    {
+        sum = sum + add(sum, i);
+        k = total(arr, i);
+    }
+    for (; i < 12; i = i + 1)
+    {
+        sum = sum + 1;
+    }
+    for (i = 0; i < 2; )
+    {
+        i = i + 1;
+    }
+    for (i = 0; i < 2; i = i + 1, k = k + 1)
+    {
+        sum = sum + k;
+    }
+    for (int q; ; q < 1; q = q + 1)
+    {
+        sum = sum + q;
+    }
+    if (sum < 0)
+        sum = 0;
+    if (sum == 100)
+        sum = sum + 1;
+    else
+        sum = sum - 1;
+    if (sum > 0)
+        if (sum > 10)
+            sum = sum - 1;
+        else
+            sum = sum + 1;
+    else
+        sum = 0;
+    arr[0] = 1;
+    a = arr[2] >= 5;
+    d = pi ^ 2;
+    f = (a + i) * 1.5;
+    k = ++i;
+    k = --i;
+    k = i != 0;
+    k = i <= 10;
+    k = i > 0;
+    k = zero();
+    ;
+    return;
+}
+// 文件末尾无换行的行注释（EOF 处理）

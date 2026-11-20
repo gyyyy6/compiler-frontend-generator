@@ -1,0 +1,278 @@
+// 生成的词法分析器源码（T1.8，CompilerCourse task1 代码生成）
+// 请勿手改本文件；由 ScannerSourceGenerator 渲染自 scanner_main.cpp.in。
+// 零 Qt 依赖、仅 C++17 + STL，可独立编译运行。
+//
+// 生成风格（v2 方法二）：
+//   状态变量 state + while(!done){ switch(state){...} }，每 case 内嵌区间合并与
+//   关键字符分支，多字符符号在后续 case 续读；循环外统一回溯：lastCode>=0 产 token、
+//   否则 ERROR 单字符。
+// 内嵌数据：ACC[]（状态→token 编码）、KEYWORDS[]（排序 + lower_bound）、
+//   IGN[256]（空白）、TOK_MODE[256]（数据行渲染模式）、注释定界符、
+//   COMMENT_CODES[]（丢弃的注释编码）、START_STATE；不嵌 256 转移表。
+// 运行：generated_lexer <input> [output]，缺省输出 sample.lex。
+
+#include <algorithm>
+#include <cstring>
+#include <fstream>
+#include <iostream>
+#include <iterator>
+#include <string>
+
+namespace {
+
+// 保留编码：0=EOF、255=ERROR（FILE_FORMATS.md §4.1）
+constexpr int ERROR_CODE = 255;
+
+// 最小 DFA 起点
+constexpr int START_STATE = @@START_STATE@@;
+
+// ACC[state]：接受态对应的 token 编码；非接受态 -1
+constexpr int ACC[] = {
+@@ACC@@
+};
+
+// IGN[byte]：1=跳过（空白/@ignore），0=处理
+constexpr unsigned char IGN[256] = {
+@@IGN@@
+};
+
+// TOK_MODE[code]：数据行渲染模式（与宿主 SampleLexWriter::renderModeForKind 一致）
+//   0=跳过（注释）  1=仅编码（关键字/符号/界符）  2=编码 "lexeme"（标识符）
+//   3=编码 lexeme（数值）  4=255 <单字符>（非法字符）
+constexpr unsigned char TOK_MODE[256] = {
+@@TOK_MODE@@
+};
+
+// COMMENT_CODES：DFA 命中后直接丢弃的编码（Comment 前缀规则；空表用哨兵 -1）
+constexpr int COMMENT_CODES[] = {
+@@COMMENT_CODES@@
+};
+constexpr int COMMENT_CODES_COUNT = sizeof(COMMENT_CODES) / sizeof(COMMENT_CODES[0]);
+
+// 关键字：拼写（ASCII 小写折叠键，按 strcmp 升序）+ 编码；std::lower_bound 零动态分配查找
+struct KeywordEntry { const char* spelling; int code; };
+constexpr KeywordEntry KEYWORDS[] = {
+@@KEYWORDS@@
+};
+constexpr int KEYWORD_COUNT = sizeof(KEYWORDS) / sizeof(KEYWORDS[0]);
+
+// 行注释定界符（前缀；消费到换行前；空表用哨兵 ""）
+constexpr const char* LINE_COMMENTS[] = {
+@@LINE_COMMENTS@@
+};
+constexpr int LINE_COMMENT_COUNT = sizeof(LINE_COMMENTS) / sizeof(LINE_COMMENTS[0]);
+
+// 块注释定界符对（空表用哨兵 {"",""}）
+struct BlockComment { const char* open; const char* close; };
+constexpr BlockComment BLOCK_COMMENTS[] = {
+@@BLOCK_COMMENTS@@
+};
+constexpr int BLOCK_COMMENT_COUNT = sizeof(BLOCK_COMMENTS) / sizeof(BLOCK_COMMENTS[0]);
+
+// 头部固定元数据（#source 为运行期输入路径；省略 #generated-at）
+constexpr const char HDR_PREFIX[] =
+@@HDR_PREFIX@@;
+constexpr const char HDR_GENERATOR[] =
+@@HDR_GENERATOR@@;
+// token 表（TokenCodeRegistry::toHeader() 逐字节内嵌）
+constexpr const char TOKEN_TABLE[] =
+@@TOKEN_TABLE@@;
+
+// DFA 查表用字节折叠（@case-sensitive=false 时 ASCII 大写→小写，true 时恒等）
+inline int foldByte(int c) {
+    @@FOLD@@
+}
+
+// 关键字反查用折叠：恒 ASCII 大写→小写（与 @case-sensitive 无关）
+inline int foldByteAlways(int c) {
+    return (c >= 'A' && c <= 'Z') ? (c + ('a' - 'A')) : c;
+}
+
+bool isCommentCode(int code) {
+    for (int i = 0; i < COMMENT_CODES_COUNT; ++i) {
+        if (COMMENT_CODES[i] == code) return true;
+    }
+    return false;
+}
+
+} // namespace
+
+int main(int argc, char** argv)
+{
+    if (argc < 2 || argc > 3) {
+        std::cerr << "usage: " << (argc > 0 ? argv[0] : "generated_lexer")
+                  << " <input> [output]\n";
+        return 1;
+    }
+    const std::string inputPath = argv[1];
+    const std::string outputPath = (argc >= 3) ? argv[2] : "sample.lex";
+
+    std::ifstream in(inputPath, std::ios::binary);
+    if (!in) {
+        std::cerr << "error: cannot open input file: " << inputPath << "\n";
+        return 1;
+    }
+    const std::string src((std::istreambuf_iterator<char>(in)),
+                          std::istreambuf_iterator<char>());
+    in.close();
+
+    std::ofstream out(outputPath, std::ios::binary);
+    if (!out) {
+        std::cerr << "error: cannot open output file: " << outputPath << "\n";
+        return 1;
+    }
+
+    // ---- 头部（FILE_FORMATS.md §4.2；无 #generated-at）----
+    out << HDR_PREFIX;
+    out << "#source: " << inputPath << "\n";
+    out << HDR_GENERATOR;
+    out << TOKEN_TABLE;
+
+    // ---- 扫描（与 T1.7 Scanner 同语义）----
+    const size_t len = src.size();
+    size_t begin = 0;
+    bool firstToken = true;
+
+    while (begin < len) {
+        const unsigned char c0 = static_cast<unsigned char>(src[begin]);
+
+        // 1) 忽略空白
+        if (IGN[c0] != 0) {
+            ++begin;
+            continue;
+        }
+
+        // 2) 行注释（优先于 DFA；消费到换行前，换行由 IGN 跳过）
+        {
+            bool consumed = false;
+            for (int i = 0; i < LINE_COMMENT_COUNT; ++i) {
+                const char* pfx = LINE_COMMENTS[i];
+                const size_t plen = std::strlen(pfx);
+                if (plen == 0) continue;
+                if (src.compare(begin, plen, pfx) == 0) {
+                    size_t p = begin;
+                    while (p < len && src[p] != '\n') ++p;
+                    begin = p;
+                    consumed = true;
+                    break;
+                }
+            }
+            if (consumed) continue;
+        }
+
+        // 3) 块注释（消费到闭串之后；未闭合 → 消费到 EOF + stderr Warning）
+        {
+            bool consumed = false;
+            for (int i = 0; i < BLOCK_COMMENT_COUNT; ++i) {
+                const char* open = BLOCK_COMMENTS[i].open;
+                const char* close = BLOCK_COMMENTS[i].close;
+                const size_t olen = std::strlen(open);
+                const size_t clen = std::strlen(close);
+                if (olen == 0 || clen == 0) continue;
+                if (src.compare(begin, olen, open) == 0) {
+                    const size_t p = begin + olen;
+                    const size_t closePos = src.find(close, p);
+                    if (closePos == std::string::npos) {
+                        std::cerr << "warning: unterminated block comment at offset "
+                                  << begin << "\n";
+                        begin = len;
+                    } else {
+                        begin = closePos + clen;
+                    }
+                    consumed = true;
+                    break;
+                }
+            }
+            if (consumed) continue;
+        }
+
+        // 4) DFA 最长匹配（方法二：state 变量 + while(!done){ switch(state){...} }）
+        size_t cur = begin;
+        int state = START_STATE;
+        int lastCode = -1;
+        size_t lastEnd = begin;
+        bool done = false;
+
+        while (!done) {
+            if (cur >= len) {
+                done = true;
+                break;
+            }
+            const int c = foldByte(static_cast<unsigned char>(src[cur]));
+            int next = -1;
+            switch (state) {
+@@STATES@@
+            default:
+                break;
+            }
+            if (next < 0) {
+                done = true;
+                break;
+            }
+            state = next;
+            ++cur;
+            if (ACC[state] >= 0) {
+                lastCode = ACC[state];
+                lastEnd = cur;
+            }
+        }
+
+        // 5) 循环外统一回溯：lastCode>=0 → 产 token；否则 ERROR 单字符
+        if (lastCode >= 0) {
+            // 5a) Comment 前缀规则：输出丢弃
+            if (isCommentCode(lastCode)) {
+                begin = lastEnd;
+                continue;
+            }
+
+            // 5b) 关键字重分类（恒大小写不敏感，拼写保留原文）
+            const std::string lexeme = src.substr(begin, lastEnd - begin);
+            std::string low = lexeme;
+            for (char& ch : low) {
+                ch = static_cast<char>(foldByteAlways(static_cast<unsigned char>(ch)));
+            }
+            int code = lastCode;
+            {
+                const KeywordEntry key{low.c_str(), -1};
+                const KeywordEntry* it =
+                    std::lower_bound(KEYWORDS, KEYWORDS + KEYWORD_COUNT, key,
+                                     [](const KeywordEntry& a, const KeywordEntry& b) {
+                                         return std::strcmp(a.spelling, b.spelling) < 0;
+                                     });
+                if (it != KEYWORDS + KEYWORD_COUNT &&
+                    std::strcmp(it->spelling, low.c_str()) == 0) {
+                    code = it->code;
+                }
+            }
+
+            // 5c) 渲染数据行（TOK_MODE 与宿主 SampleLexWriter 一致）
+            const unsigned char mode = TOK_MODE[static_cast<unsigned char>(code)];
+            if (mode == 0) {            // 注释：5a 已丢弃，防御性跳过
+                begin = lastEnd;
+                continue;
+            }
+            if (!firstToken) out << ' ';
+            firstToken = false;
+            out << code;
+            if (mode == 2) {
+                out << " \"" << lexeme << '"';
+            } else if (mode == 3) {
+                out << ' ' << lexeme;
+            }
+            begin = lastEnd;
+            continue;
+        }
+
+        // 6) 非法字符：ERROR 255 <单字符> + stderr 提示后继续（begin++）
+        if (!firstToken) out << ' ';
+        firstToken = false;
+        out << ERROR_CODE << ' ' << static_cast<char>(src[begin]);
+        std::cerr << "error: illegal character '" << static_cast<char>(src[begin])
+                  << "' at offset " << begin << "\n";
+        ++begin;
+    }
+
+    out << "\n";
+    out.close();
+    return 0;
+}

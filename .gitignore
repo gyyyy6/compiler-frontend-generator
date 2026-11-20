@@ -1,0 +1,45 @@
+# Build directories
+build/
+build-*/
+cmake-build-*/
+out/
+
+# Qt Creator
+.qtcreator/
+*.user
+*.user.*
+
+# CMake files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+
+# Compiled files
+*.exe
+*.dll
+*.so
+*.o
+*.obj
+*.a
+
+# IDE
+.vscode/
+.idea/
+
+# Temporary files
+*.log
+*.tmp
+*.bak
+
+# PPT 复核用的逐页渲染与备注导出（临时产物）
+tools/_render*/
+tools/_r[0-9]*/
+tools/_notes_dump.txt
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# 参考文件（老师的任务书/讲稿/模板，不入库）
+参考文件/

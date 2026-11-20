@@ -1,0 +1,40 @@
+@name TINY
+@case-sensitive false
+@ignore [ \t\r\n]
+@comment block { }
+
+# --- 关键字（8 个，编码 103-110；引号字面量，display 为拼写）---
+# 注意：关键字规则排在 ID 规则之前（TASKS.md T1.10 注意事项 3），
+# 避免 ID（正则覆盖关键字、长度相同取先声明者）遮蔽关键字。
+KW_IF_103 = "if"
+KW_THEN_104 = "then"
+KW_ELSE_105 = "else"
+KW_END_106 = "end"
+KW_REPEAT_107 = "repeat"
+KW_UNTIL_108 = "until"
+KW_READ_109 = "read"
+KW_WRITE_110 = "write"
+
+# --- 标识符与数字（编码 101 / 100）---
+ID_101 = letter (letter|digit)*
+NUM_100 = digit+
+
+# --- 专用符号（编码 200+；沿用 T1.6 测试编码，补齐 % ^ <>）---
+# TINY 单词表：+ - * / % ^ < <> <= >= > = ; :=（{ } 为注释定界符，不定义 token；
+# 文法 factor -> (exp) 使用括号，补充 ( )）。
+SYM_ASSIGN_200 = ":="
+SYM_PLUS_201 = "+"
+SYM_MINUS_202 = "-"
+SYM_TIMES_203 = "*"
+SYM_DIV_204 = "/"
+SYM_LT_205 = "<"
+SYM_LE_206 = "<="
+SYM_GT_207 = ">"
+SYM_GE_208 = ">="
+SYM_EQ_209 = "="
+SYM_LPAREN_210 = "("
+SYM_RPAREN_211 = ")"
+SYM_SEMI_212 = ";"
+SYM_MOD_213 = "%"
+SYM_POWER_214 = "^"
+SYM_NE_215 = "<>"

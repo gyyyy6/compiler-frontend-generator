@@ -1,0 +1,17 @@
+// Mini-C 词法专项（T3.1 决策①）：本文件不要求语法通过
+// 预期：
+//   3.14 -> NUM(100) 单 token
+//   3.   -> NUM(100) + SYM_DOT(223)
+//   独立 . -> SYM_DOT(223)
+//   独立 _ -> ID(101)（当前 minic.rules 不单列 _ 符号）
+//   _tmp / a_1 / iffy / format -> ID(101)
+
+int _tmp;
+int a_1;
+double pi;
+pi = 3.14;
+3.
+.
+_
+iffy;
+format;

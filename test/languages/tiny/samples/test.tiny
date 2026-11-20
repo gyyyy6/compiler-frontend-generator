@@ -1,0 +1,25 @@
+{ TINY 语言测试源程序：覆盖全部单词与全部语句 }
+{ 依据《编译原理课程设计》讲稿 TINY 单词表与 BNF 文法；块注释可跨行，不能嵌套 }
+if x <= 10 then
+    y := 1;
+    z := x + y * 2 - 10 / 5 % 3;
+    p := x ^ 2;
+    read w;
+    write w + z
+else
+    y := 2;
+    write y <> z
+end;
+repeat
+    x := x - 1;
+    write x
+until x <= 0;
+READ a;
+b := a >= 5;
+c := a < b;
+d := a > b;
+e := a = b;
+write (a + b) * 2;
+IF f THEN
+    g := 1
+END

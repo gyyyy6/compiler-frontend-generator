@@ -1,0 +1,51 @@
+@name MiniC
+@case-sensitive true
+@ignore [ \t\r\n]
+@comment line //
+
+# --- 关键字（9 个，编码 103-111；引号字面量，display 为拼写）---
+# 任务书 PDF 第二组测试数据确认为 9 个：e1se(笔误→else) if int float
+# double return void while for；int 置首使 int=103，与任务书示例输出
+# "int a=b-1; -> 103 101 "a" ..." 一致。关键字规则排在 ID 规则之前。
+KW_INT_103 = "int"
+KW_FLOAT_104 = "float"
+KW_DOUBLE_105 = "double"
+KW_VOID_106 = "void"
+KW_ELSE_107 = "else"
+KW_IF_108 = "if"
+KW_RETURN_109 = "return"
+KW_WHILE_110 = "while"
+KW_FOR_111 = "for"
+
+# --- 标识符与数字（编码 101 / 100；NUM 含小数）---
+# ID = (_|letter)(_|letter|digit)*；NUM = digit+(.digit+)?（点需转义 \.）
+ID_101 = (_|letter)(_|letter|digit)*
+NUM_100 = digit+(\.digit+)?
+
+# --- 专用符号（编码 200+；- =201、= =204 与任务书示例输出一致）---
+# 任务书单词表：_ + - * / % ^ . < <= > >= == != = ; , ++ -- ( ) [ ] { }
+# 单独 "_" 不单列（TASKS.md §6.5）：ID 首字符已覆盖，单独 _ 无合法文法位置。
+SYM_PLUS_200 = "+"
+SYM_MINUS_201 = "-"
+SYM_TIMES_202 = "*"
+SYM_DIV_203 = "/"
+SYM_ASSIGN_204 = "="
+SYM_LT_205 = "<"
+SYM_LE_206 = "<="
+SYM_GT_207 = ">"
+SYM_GE_208 = ">="
+SYM_EQ_209 = "=="
+SYM_NE_210 = "!="
+SYM_SEMI_211 = ";"
+SYM_COMMA_212 = ","
+SYM_INC_213 = "++"
+SYM_DEC_214 = "--"
+SYM_LPAREN_215 = "("
+SYM_RPAREN_216 = ")"
+SYM_LBRACKET_217 = "["
+SYM_RBRACKET_218 = "]"
+SYM_LBRACE_219 = "{"
+SYM_RBRACE_220 = "}"
+SYM_MOD_221 = "%"
+SYM_POWER_222 = "^"
+SYM_DOT_223 = "."

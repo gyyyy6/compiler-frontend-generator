@@ -1,0 +1,55 @@
+// Mini-C 边界文法样例：形状怪异但语法合法
+// 与 test.minic 的正向全覆盖互补；预期 0 ERROR、语法树根 program
+
+int g;
+int arr[4];
+
+int zero(void)
+{
+    return 0;
+}
+
+void main(void)
+{
+    int i;
+    int k;
+    int sum;
+
+    for (int q; ; q < 1; q = q + 1) // 第一个分号属于 variable-definition，第二个是 for-stmt 分隔符
+    {
+        sum = sum + q;
+    }
+
+    // for-init -> #：首段为空
+    for (; i < 2; i = i + 1)
+    {
+        g = g + 1;
+    }
+
+    // for-update -> #：尾段为空
+    for (i = 0; i < 2; )
+    {
+        i = i + 1;
+    }
+
+    // for-update -> expression-list：逗号分隔
+    for (i = 0; i < 2; i = i + 1, k = k + 1)
+    {
+        sum = sum + k;
+    }
+
+    g = k = sum = zero();   // 连续赋值 + arguments -> #
+    arr[0] = arr[1] = 1;    // 连续数组下标左值
+    ;                       // 空表达式语句
+    { }                     // 空复合语句（local-definitions -> #，statement-list -> #）
+    while (g < 0)
+        ;                   // 空语句作为 while 体
+    if (g > 0)
+        if (g > 1)
+            g = g - 1;
+        else
+            g = g + 1;
+    else
+        g = 0;              // 外层 else 与内层悬挂 else 同时出现
+    return;
+}
